@@ -21,6 +21,36 @@ let dbConnectPromise = null;
 let startupSeedPromise = null;
 
 const getFrontendOrigin = () => process.env.FRONTEND_URL || 'http://localhost:3000';
+const getAllowedOrigins = () => {
+  const configuredOrigins = String(process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return new Set([
+    ...configuredOrigins,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ]);
+};
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  const allowedOrigins = getAllowedOrigins();
+  if (allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  try {
+    const { hostname } = new URL(origin);
+    return hostname.endsWith('.vercel.app') || hostname.endsWith('.netlify.app');
+  } catch (error) {
+    return false;
+  }
+};
 
 const runStartupSeeds = async () => {
   if (!startupSeedPromise) {
@@ -63,10 +93,28 @@ const connectToDatabase = async () => {
   return dbConnectPromise;
 };
 
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? getFrontendOrigin() : true,
-  credentials: true
-}));
+const corsOptions = {
+  origin(origin, callback) {
+    if (process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+      return;
+    }
+
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked for origin: ${origin || 'unknown'}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(passport.initialize());
