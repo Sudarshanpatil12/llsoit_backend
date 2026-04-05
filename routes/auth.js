@@ -60,7 +60,8 @@ router.post('/register', async (req, res) => {
       bio,
       linkedinUrl,
       skills = [],
-      achievements = []
+      achievements = [],
+      careerHistory = []
     } = req.body;
 
     if (!enrollmentNumber || !password) {
@@ -116,6 +117,7 @@ router.post('/register', async (req, res) => {
       linkedinUrl: trimmedLinkedin || undefined,
       skills,
       achievements,
+      careerHistory,
       status: 'pending',
       isVerified: false
     });
@@ -333,7 +335,8 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     const allowedUpdates = [
       'name', 'email', 'mobile', 'graduationYear', 'department', 'jobTitle', 'company', 'location', 'bio',
-      'linkedinUrl', 'skills', 'achievements', 'experience', 'contactPreferences', 'privacySettings'
+      'linkedinUrl', 'skills', 'achievements', 'experience', 'careerHistory', 'contactPreferences', 'privacySettings',
+      'profileImage'
     ];
 
     const updates = {};

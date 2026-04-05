@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const alumniRoutes = require('./routes/alumni');
 const adminRoutes = require('./routes/admin');
 const eventsRoutes = require('./routes/events');
+const jobsRoutes = require('./routes/jobs');
 const { ensureDefaultAdmin } = require('./utils/seedAdmin');
 const { ensureSampleAlumni } = require('./utils/seedSampleAlumni');
 const { errorHandler } = require('./middleware/errorHandler');
@@ -136,6 +137,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/alumni', alumniRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventsRoutes);
+app.use('/api/jobs', jobsRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {

@@ -2,6 +2,7 @@ const express = require('express');
 const Alumni = require('../models/Alumni');
 const Admin = require('../models/Admin');
 const Event = require('../models/Event');
+const Job = require('../models/Job');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { sendApprovalEmail } = require('../utils/emailService');
 
@@ -318,7 +319,9 @@ router.put('/alumni/:id', async (req, res) => {
       'enrollmentNumber',
       'skills',
       'achievements',
-      'experience'
+      'experience',
+      'careerHistory',
+      'profileImage'
     ];
 
     const updates = {};
@@ -375,6 +378,97 @@ router.put('/alumni/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update alumni profile',
+      error: error.message
+    });
+  }
+});
+
+router.get('/jobs', async (req, res) => {
+  try {
+    const {
+      status,
+      page = 1,
+      limit = 100
+    } = req.query;
+
+    const filter = {};
+    if (status) {
+      filter.status = status;
+    }
+
+    const jobs = await Job.paginate(filter, {
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      sort: { createdAt: -1 },
+      populate: [
+        { path: 'submittedBy', select: 'name email company jobTitle profileImage' },
+        { path: 'approvedBy', select: 'name email' }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: jobs.docs,
+      pagination: {
+        currentPage: jobs.page,
+        totalPages: jobs.totalPages,
+        totalJobs: jobs.totalDocs,
+        hasNextPage: jobs.hasNextPage,
+        hasPrevPage: jobs.hasPrevPage
+      }
+    });
+  } catch (error) {
+    console.error('Admin get jobs error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch jobs',
+      error: error.message
+    });
+  }
+});
+
+router.put('/jobs/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, rejectionReason = '' } = req.body;
+
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid job status'
+      });
+    }
+
+    const job = await Job.findById(id);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found'
+      });
+    }
+
+    job.status = status;
+    job.rejectionReason = status === 'rejected' ? rejectionReason : '';
+    job.approvedBy = status === 'approved' ? req.admin._id : undefined;
+    job.approvedAt = status === 'approved' ? new Date() : undefined;
+
+    await job.save();
+    await job.populate([
+      { path: 'submittedBy', select: 'name email company jobTitle profileImage' },
+      { path: 'approvedBy', select: 'name email' }
+    ]);
+
+    res.json({
+      success: true,
+      message: `Job ${status} successfully`,
+      data: job
+    });
+  } catch (error) {
+    console.error('Admin update job status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update job status',
       error: error.message
     });
   }

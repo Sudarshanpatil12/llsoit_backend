@@ -141,6 +141,36 @@ const alumniSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
+  careerHistory: [{
+    company: {
+      type: String,
+      trim: true
+    },
+    title: {
+      type: String,
+      trim: true
+    },
+    location: {
+      type: String,
+      trim: true
+    },
+    startDate: {
+      type: String,
+      trim: true
+    },
+    endDate: {
+      type: String,
+      trim: true
+    },
+    isCurrent: {
+      type: Boolean,
+      default: false
+    },
+    summary: {
+      type: String,
+      trim: true
+    }
+  }],
   pendingUpdates: {
     type: Object,
     default: null
